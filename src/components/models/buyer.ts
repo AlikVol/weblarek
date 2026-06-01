@@ -6,6 +6,22 @@ export class Buyer {
     private phone: string = '';
     private address: string = '';
 
+    setPayment(payment: TPayment): void {
+        this.payment = payment;
+    }
+
+    setAddress(address: string): void {
+        this.address = address;
+    }
+
+    setEmail(email: string): void {
+        this.email = email;
+    }
+
+    setPhone(phone: string): void {
+        this.phone = phone;
+    }
+
     setData(data: Partial<IBuyer>): void {
         if (data.payment !== undefined) this.payment = data.payment;
         if (data.email !== undefined) this.email = data.email;
@@ -13,7 +29,7 @@ export class Buyer {
         if (data.address !== undefined) this.address = data.address;
     }
 
-    getData(): IBuyer {
+    getBuyerData(): IBuyer {
         return {
             payment: this.payment,
             email: this.email,
@@ -31,7 +47,7 @@ export class Buyer {
 
     validate(): IBuyerErrors {
         const errors: IBuyerErrors = {};
-        
+
         if (!this.payment) {
             errors.payment = 'Не выбран способ оплаты';
         }
@@ -44,7 +60,7 @@ export class Buyer {
         if (!this.phone.trim()) {
             errors.phone = 'Не указан телефон';
         }
-        
-        return errors;
+
+         return errors;
     }
 }

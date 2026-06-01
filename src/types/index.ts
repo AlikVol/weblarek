@@ -7,7 +7,7 @@ export interface IApi {
 
 
 //способ оплаты 
-export type TPayment = `online` | `cash`;
+export type TPayment = `cash` | `card`;
 
 //товар
 export interface IProduct {
