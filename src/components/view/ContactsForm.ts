@@ -40,22 +40,4 @@ export class ContactsForm extends BaseForm<IContactsForm> {
   set phone(value: string) {
     this.phoneInput.value = value;
   }
-
-  set errorMessages(messages: string[]) {
-    this.showErrors(messages);
-  }
-
-  private showErrors(messages: string[]): void {
-    if (!this.errorContainer) return;
-
-    if (messages.length === 0) {
-      this.errorContainer.style.display = 'none';
-      this.errorContainer.innerHTML = '';
-    } else {
-      this.errorContainer.style.display = 'block';
-      this.errorContainer.innerHTML = messages
-        .map(msg => `<div class="error-message">${msg}</div>`)
-        .join('');
-    }
-  }
 }

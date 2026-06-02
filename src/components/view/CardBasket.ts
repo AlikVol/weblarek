@@ -39,12 +39,4 @@ export class CardBasket extends BaseCard<ICardBasket> {
     set name(value: string) {
     this.nameElement.textContent = value;
     }
-
-    set cost(value: number | null) {
-    if (value === null) {
-      this.costElement.textContent = '—';
-    } else {
-      this.costElement.textContent = `${value} ₽`;
-    }
-  }
 }

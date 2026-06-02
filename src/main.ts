@@ -71,7 +71,7 @@ function refreshCartDisplay() {
     });
     card.index = index + 1;
     card.name = product.title;
-    card.cost = product.price;
+    card.price = product.price;
     return card.render();
   });
   cartUI.items = cards;
@@ -191,11 +191,16 @@ appEvents.on('contact:submit', () => {
     })
     .catch(error => {
       console.error('Ошибка оформления заказа:', error);
-      contactUI.errorMessages = ['Ошибка оформления заказа. Попробуйте позже.'];
+      contactUI.errors = ['Ошибка оформления заказа. Попробуйте позже.'];
     });
   refreshOrderForms();
 });
 
-const closeModal = () => appModal.close();
+const closeModal = () => {
+    if (appModal.isModalOpen()) {  
+        appModal.close();
+    }
+};
+
 appEvents.on('success:close', closeModal);
 appEvents.on('modal:close', closeModal);

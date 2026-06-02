@@ -4,7 +4,7 @@ import { ensureElement } from '../../utils/utils';
 
 export interface IForm {
     valid: boolean;
-    errors: string;
+    errors: string[];
 }
 
 export abstract class BaseForm<T> extends Component<IForm & T> {
@@ -25,7 +25,7 @@ export abstract class BaseForm<T> extends Component<IForm & T> {
         this.submitButton.disabled = !value;
     }
 
-    set errors(value: string) {
-        this.errorsElement.textContent = value;
+    set errors(value: string[]) {
+        this.errorsElement.textContent = value.filter(Boolean).join(', ');
     }
 }

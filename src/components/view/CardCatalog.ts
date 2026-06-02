@@ -20,12 +20,14 @@ export class CardCatalog extends BaseCard<ICard> {
         }
     }
 
-    set category(value: keyof typeof categoryMap) {
+    set category(value: string) {
         this.categoryElement.textContent = value;
-        this.categoryElement.className = 'card__category';
-        const categoryModifier = categoryMap[value];
-        if (categoryModifier) {
-            this.categoryElement.classList.add(categoryModifier);
+        Object.values(categoryMap).forEach(className => {   
+            this.categoryElement.classList.remove(className);
+        });
+        const categoryClass = categoryMap[value as keyof typeof categoryMap];
+        if (categoryClass) {
+            this.categoryElement.classList.add(categoryClass);
         }
     }
     
