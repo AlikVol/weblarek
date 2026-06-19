@@ -15,9 +15,16 @@ export abstract class BaseForm<T> extends Component<IForm & T> {
         super(container);
         this.submitButton = ensureElement<HTMLButtonElement>('button[type=submit]', this.container);
         this.errorsElement = ensureElement<HTMLElement>('.form__errors', this.container);
+
         this.container.addEventListener('submit', (event) => {
             event.preventDefault();
-            this.events.emit('${(this.container as HTMLFormElement).name}:submit');
+
+            // Собираем данные из всех полей формы
+            const formData = new FormData(this.container as HTMLFormElement);
+            const data = Object.fromEntries(formData.entries()) as T & IForm;
+
+
+            this.events.emit(`${(this.container as HTMLFormElement).name}:submit`, data);
         });       
     }
 
