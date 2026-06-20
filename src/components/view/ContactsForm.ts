@@ -1,7 +1,7 @@
 import { BaseForm } from './BaseForm';
 import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
-import { IBuyerErrors } from '../../types';
+
 
 interface IContactsForm {
   email: string;
@@ -11,7 +11,6 @@ interface IContactsForm {
 export class ContactsForm extends BaseForm<IContactsForm> {
   protected emailInput: HTMLInputElement;
   protected phoneInput: HTMLInputElement;
-  private errorContainer: HTMLElement | null = null;
 
   constructor(container: HTMLFormElement, events: IEvents) {
     super(events, container);
@@ -19,13 +18,7 @@ export class ContactsForm extends BaseForm<IContactsForm> {
     this.emailInput = ensureElement<HTMLInputElement>('input[name="email"]', this.container);
     this.phoneInput = ensureElement<HTMLInputElement>('input[name="phone"]', this.container);
 
-  
-    try {
-      this.errorContainer = ensureElement<HTMLElement>('.form__errors', this.container);
-    } catch (error) {
-      console.warn('Контейнер для ошибок (.form__errors) не найден в форме контактов.');
-    }
-
+    // Подписываемся на ввод данных
     this.emailInput.addEventListener('input', () => {
       this.events.emit('contact:email:updated', { email: this.emailInput.value });
     });
@@ -44,42 +37,20 @@ export class ContactsForm extends BaseForm<IContactsForm> {
   }
 
   
-  renderErrors(errors: IBuyerErrors): void {
-    
-    this.clearErrors();
-
-    
-    const errorMessages: string[] = [];
-
-    if (errors.email) {
-      errorMessages.push(errors.email);
+  render(data?: { email?: string; phone?: string; errors?: string[] }): HTMLElement {
+    if (data) {
+      if (data.email !== undefined) this.email = data.email;
+      if (data.phone !== undefined) this.phone = data.phone;
+      if (data.errors !== undefined) {
+        this.errors = data.errors; 
+      }
     }
-    if (errors.phone) {
-      errorMessages.push(errors.phone);
-    }
-
-    
-    if (errorMessages.length > 0 && this.errorContainer) {
-      (this.errorContainer as HTMLElement).textContent = errorMessages.join(' | ');
-      (this.errorContainer as HTMLElement).style.display = 'block';
-    }
-
-    
-    const hasErrors = errorMessages.length > 0;
-    this.valid = !hasErrors;
-  }
-
-  
-  clearErrors(): void {
-    if (this.errorContainer) {
-      (this.errorContainer as HTMLElement).textContent = '';
-      (this.errorContainer as HTMLElement).style.display = 'none';
-    }
+    return this.container;
   }
 
   clear(): void {
     this.emailInput.value = '';
     this.phoneInput.value = '';
-    this.clearErrors(); 
+    this.errors = []; 
   }
 }

@@ -29,13 +29,6 @@ export class Buyer {
         this.events.emit('order:changed');
     }
 
-    setData(data: Partial<IBuyer>): void {
-        if (data.payment !== undefined) this.payment = data.payment;
-        if (data.email !== undefined) this.email = data.email;
-        if (data.phone !== undefined) this.phone = data.phone;
-        if (data.address !== undefined) this.address = data.address;
-    }
-
     getBuyerData(): IBuyer {
         return {
             payment: this.payment,

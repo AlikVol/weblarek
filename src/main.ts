@@ -8,7 +8,6 @@ import { Buyer } from './components/models/buyer';
 import { API_URL } from './utils/constants';
 import { IProduct, TPayment } from './types';
 
-
 // Импорты компонентов интерфейса
 import { Header } from './components/view/Header';
 import { Gallery } from './components/view/Gallery';
@@ -24,7 +23,7 @@ import { cloneTemplate } from './utils/utils';
 
 function getImageUrl(filename: string): string {
     if (!filename) return '';
-    const relativePath = '../images/'; 
+    const relativePath = '../images/';
     return new URL(`${relativePath}${filename}`, import.meta.url).href;
 }
 
@@ -50,6 +49,7 @@ const cartTpl = document.querySelector('#basket') as HTMLTemplateElement;
 const orderFormTpl = document.querySelector('#order') as HTMLTemplateElement;
 const contactsFormTpl = document.querySelector('#contacts') as HTMLTemplateElement;
 const successTpl = document.querySelector('#success') as HTMLTemplateElement;
+
 const cartUI = new BaseBasket(appEvents, cloneTemplate(cartTpl));
 const orderUI = new OrderForm(appEvents, cloneTemplate(orderFormTpl) as HTMLFormElement);
 const contactUI = new ContactsForm(cloneTemplate(contactsFormTpl) as HTMLFormElement, appEvents);
@@ -61,12 +61,37 @@ const previewCard = new CardPreview(appEvents, cloneTemplate(previewCardTpl), {
     }
 });
 
-function updateOrderState() {
-    const errors = orderStore.validate();
-    orderUI.renderErrors(errors);
-    contactUI.renderErrors(errors);
+function refreshOrderForms() {
+  const buyerData = orderStore.getBuyerData();
+  const errors = orderStore.validate();
+
+  // Фильтруем undefined, оставляя только строки с текстом ошибок
+  const orderErrors: string[] = [errors.payment, errors.address].filter(
+    (err): err is string => Boolean(err)
+  );
+
+  const contactErrors: string[] = [errors.email, errors.phone].filter(
+    (err): err is string => Boolean(err)
+  );
+
+  orderUI.render({
+    payment: buyerData.payment,
+    address: buyerData.address,
+    errors: orderErrors 
+  });
+
+  contactUI.render({
+    email: buyerData.email,
+    phone: buyerData.phone,
+    errors: contactErrors 
+  });
 }
 
+appEvents.on('order:updated', refreshOrderForms);
+
+function updateOrderState() {
+    refreshOrderForms();
+}
 
 appEvents.on('delivery:address:changed', (data: { address: string }) => {
     orderStore.setAddress(data.address);
@@ -75,7 +100,6 @@ appEvents.on('delivery:address:changed', (data: { address: string }) => {
 
 appEvents.on('order.payment:change', (data: { payment: TPayment }) => {
     orderStore.setPayment(data.payment);
-    orderUI.payment = data.payment;
     updateOrderState();
 });
 
@@ -84,13 +108,26 @@ appEvents.on('basket:order', () => {
         alert('Корзина пуста!');
         return;
     }
+
+    const buyerData = orderStore.getBuyerData();
+
+    orderUI.render({
+        payment: buyerData.payment,
+        address: buyerData.address,
+        errors: [] 
+    });
+
     appModal.open(orderUI.render());
-    updateOrderState();
 });
 
 appEvents.on('order:submit', () => {
-    appModal.open(contactUI.render());
-    updateOrderState();
+    const buyerData = orderStore.getBuyerData();
+    contactUI.render({
+        email: buyerData.email,
+        phone: buyerData.phone,
+        errors: [] 
+    });
+    appModal.open(contactUI.render());   
 });
 
 appEvents.on('contact:email:updated', (data: { email: string }) => {
@@ -104,17 +141,30 @@ appEvents.on('contact:phone:updated', (data: { phone: string }) => {
 });
 
 appEvents.on('contacts:submit', (formData: any) => {
+    const validationErrors = orderStore.validate();
+    const contactErrorMessages = [validationErrors.email, validationErrors.phone].filter(
+        (err): err is string => Boolean(err)
+    );
+
+    if (contactErrorMessages.length > 0) {
+        contactUI.render({
+            email: formData.email,
+            phone: formData.phone,
+            errors: contactErrorMessages
+        });
+        return; 
+    }
+
+    
     const orderData = {
         ...formData,
         ...orderStore.getBuyerData(),
         total: cartStore.getTotal(),
         items: cartStore.getItems().map(item => item.id)
     };
-    console.log('Данные для отправки на сервер:', orderData);
 
     marketplaceApi.createOrder(orderData)
         .then(result => {
-            console.log('Заказ успешно создан:', result);
             cartStore.clear();
             orderStore.clear();
             successUI.total = result.total;
@@ -122,9 +172,13 @@ appEvents.on('contacts:submit', (formData: any) => {
         })
         .catch(error => {
             console.error('Ошибка оформления заказа:', error);
-            contactUI.renderErrors({
-                email: 'Произошла ошибка при оформлении заказа. Попробуйте позже.',
-                phone: ''
+            const globalError = 'Произошла ошибка при оформлении заказа. Попробуйте позже.';
+
+            
+            contactUI.render({
+                email: orderStore.getBuyerData().email,
+                phone: orderStore.getBuyerData().phone,
+                errors: [globalError]
             });
         });
 });
@@ -134,9 +188,8 @@ const closeModal = () => {
         return;
     }
 
-   
-    orderUI.clearErrors();
-    contactUI.clearErrors();
+    orderUI.clear(); 
+    contactUI.clear();
 
     appEvents.off('success:close', closeModal);
     appEvents.off('modal:close', closeModal);
@@ -144,11 +197,11 @@ const closeModal = () => {
     appModal.close();
 };
 
-// Подписываемся на события закрытия
+
 appEvents.on('success:close', closeModal);
 appEvents.on('modal:close', closeModal);
 
-// Переподписываемся на события при открытии модального окна
+
 appEvents.on('modal:open', () => {
     appEvents.on('success:close', closeModal);
     appEvents.on('modal:close', closeModal);
@@ -172,7 +225,7 @@ function refreshCartDisplay() {
     cartUI.updateSubmitButtonState(items.length > 0);
 }
 
-// Обработчики событий от моделей
+
 appEvents.on('products:loaded', () => {
     const products = productStore.getItems();
     const productCards = products.map(product => {
@@ -197,7 +250,7 @@ appEvents.on('product:selected', (selectedProduct: IProduct) => {
     const isInCart = cartStore.hasItem(selectedProduct.id);
     const buttonText = isInCart ? 'Удалить из корзины' : 'В корзину';
 
-     previewCard.render({
+    previewCard.render({
         title: selectedProduct.title,
         price: selectedProduct.price,
         description: selectedProduct.description || 'Описание отсутствует',
@@ -240,7 +293,7 @@ appEvents.on('product:action:trigger', () => {
 // Обработчик изменения корзины
 appEvents.on('basket:changed', () => {
     appHeader.counter = cartStore.getCount();
-    refreshCartDisplay(); 
+    refreshCartDisplay();
 });
 
 appEvents.on('cart:open', () => {
@@ -249,8 +302,8 @@ appEvents.on('cart:open', () => {
 
 appEvents.on('checkout:initiate', () => {
     orderStore.clear();
+    updateOrderState();
     appModal.open(orderUI.render());
-    updateOrderState(); 
 });
 
 // Загрузка данных о товарах
@@ -285,4 +338,3 @@ window.addEventListener('beforeunload', () => {
     appEvents.offAll();
     console.log('Ресурсы приложения очищены');
 });
-
